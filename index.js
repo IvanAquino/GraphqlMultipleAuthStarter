@@ -8,7 +8,28 @@ const schema = require("./api")
 const app = express();
 const server = new ApolloServer({
     schema,
-    playground: config.debug
+    playground: config.debug,
+    cors: config.cors,
+    context: ({ req, connection }) => {
+      if (!! connection ) return {...connection.context, pubsub}
+      if (!!req) {
+          const token = req.headers['authorization'];
+          if (!!token) {
+              try {
+                  let verifiedData = jwt.verify(token, process.env.JWT_SECRET);
+                  return { authenticatedId: verifiedData.user, authenticatedType: verifiedData.type, pubsub }
+              } catch (err) {
+                  return {}
+              }
+          }
+      }
+  },
+  subscriptions: {
+      onConnect: async (connectionParams) => {
+          let verifiedData = jwt.verify(connectionParams.authorization, process.env.JWT_SECRET);
+          return { authenticatedId: verifiedData.user, authenticatedType: verifiedData.type }
+      }
+  }
 });
 
 app.get('/', function (req, res) {
