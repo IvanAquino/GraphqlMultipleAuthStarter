@@ -1,11 +1,13 @@
 const http = require('http');
-const { ApolloServer } = require('apollo-server-express');
+const { ApolloServer, PubSub } = require('apollo-server-express');
 const express = require('express');
 
 const config = require('./config')
 const schema = require("./api")
+const jwt = require('jsonwebtoken')
 
 const app = express();
+const pubsub = new PubSub()
 const server = new ApolloServer({
     schema,
     playground: config.debug,
@@ -16,17 +18,17 @@ const server = new ApolloServer({
           const token = req.headers['authorization'];
           if (!!token) {
               try {
-                  let verifiedData = jwt.verify(token, process.env.JWT_SECRET);
+                  let verifiedData = jwt.verify(token, config.jwt.secret);
                   return { authenticatedId: verifiedData.user, authenticatedType: verifiedData.type, pubsub }
               } catch (err) {
-                  return {}
+                return {}
               }
           }
       }
   },
   subscriptions: {
       onConnect: async (connectionParams) => {
-          let verifiedData = jwt.verify(connectionParams.authorization, process.env.JWT_SECRET);
+          let verifiedData = jwt.verify(connectionParams.authorization, config.jwt.secret);
           return { authenticatedId: verifiedData.user, authenticatedType: verifiedData.type }
       }
   }
