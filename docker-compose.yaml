@@ -19,6 +19,5 @@ services:
     restart: always
     ports:
       - "27017:27017"
-    restart: always
     volumes:
       - "./datamongo:/data/db"
